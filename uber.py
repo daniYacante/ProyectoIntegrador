@@ -9,10 +9,15 @@ def loadMap(dir:str):
     myMap=mapa(E,V)
     # for i in range(len(myMap.esquinas)):
     #     print(myMap.esquinas[i].name)
-
+    try:
+        with open("grafMap",'bw') as gm:
+            pickle.dump(myMap,gm)
+    except Exception as e:
+        print(e)
 class mapa():
+    def fhash(self,key):
+        return int(key[1:])-1
     def __init__(self,E:list,V:list) -> None:
-        self.fhash=lambda key: int(key[1:])-1
         self.esquinas:List[esquina] = [None for e in E]
         self.fijos:List[elmFijo]
         self.moviles:List[elmMovil]
