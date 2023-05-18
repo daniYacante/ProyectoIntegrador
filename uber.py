@@ -2,6 +2,9 @@ import argparse
 from typing import List
 import re
 import pickle
+
+used_names = set()
+
 def loadMap(dir:str):
     with open(dir,'r') as mp:
         E=mp.readline().split("=")[1][1:-2].split(",")
@@ -43,11 +46,12 @@ def load_fix_element(element: str, direction: str):
     dir1 = (matches[0][0], int(matches[0][1]))
     dir2 = (matches[1][0], int(matches[1][1]))
     
-    # Verificar si el nombre del elemento ya está en uso
-    if element in name_mapping.values():
+    if element in used_names:
         print(f'Error: El nombre del elemento "{element}" ya está en uso.')
         return
     
+    # Actualizar el conjunto de nombres utilizados
+    used_names.add(element)
     # Crear el elemento fijo y mostrar información
     nombre = name_mapping.get(element, 'Desconocido')
     fijo = elmFijo(nombre, [dir1, dir2])
@@ -77,10 +81,12 @@ def load_movil_element(element: str, direction: str, monto: str):
     dir2 = (matches[1][0], int(matches[1][1]))
     
     # Verificar si el nombre del elemento ya está en uso
-    if element in name_mapping.values():
+    if element in used_names:
         print(f'Error: El nombre del elemento "{element}" ya está en uso.')
         return
     
+    # Actualizar el conjunto de nombres utilizados
+    used_names.add(element)
     # Verificar si el monto es un valor numérico
     try:
         monto = float(monto)
