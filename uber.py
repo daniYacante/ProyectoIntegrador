@@ -1,5 +1,5 @@
 import argparse
-from typing import List
+from typing import Dict
 import re
 import pickle
 def loadMap(dir:str):
@@ -15,23 +15,17 @@ def loadMap(dir:str):
     except Exception as e:
         print(e)
 class mapa():
-    def fhash(self,key):
-        return int(key[1:])-1
     def __init__(self,E:list,V:list) -> None:
-        self.esquinas:List[esquina] = [None for e in E]
-        self.fijos:List[elmFijo]
-        self.moviles:List[elmMovil]
+        self.esquinas:Dict[esquina] = {}
+        self.fijos:Dict[elmFijo]
+        self.moviles:Dict[elmMovil]
         for vert in E:
             newVert=esquina(vert)
-            pos=self.fhash(vert)
-            if self.esquinas[pos]==None:
-                self.esquinas[pos]=newVert
-            else:
-                print(f"Error cargando esquina {vert}")
+            self.esquinas[vert]=newVert
         for calle in V:
             ex,ey,w=re.findall("e*\d+",calle)
             pos=self.fhash(ex)
-            if self.esquinas[pos].name==ex:
+            if self.esquinas[vert].name==ex:
                 vec=vecina(name=ey,dist=w)
                 self.esquinas[pos].vecinas.append(vec)
 class esquina():
