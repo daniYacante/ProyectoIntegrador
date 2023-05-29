@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             //"args": ["-create_map","mapa.txt"],
-            "args": ["-load_fix_element","<H1,{<e2,3>,<e3,1>}>"],
+            "args": ["-load_fix_element","<H1,{<e3,3>,<e15,3>}>"],
         }
     ]
 }

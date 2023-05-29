@@ -113,7 +113,7 @@ class mapa():
         calles=self.esquinas[ex.group(1)].vecinas
         if ey.group(1) in calles.keys():
             calles[ey.group(1)].elementos[elemento.nombre]=elemento
-        if self.checkDir(ey,ex):
+        if self.checkDir(elemento.direccion[1],elemento.direccion[0]):
             calles=self.esquinas[ey.group(1)].vecinas
             calles[ex.group(1)].elementos[elemento.nombre]=elemento
     def getFijos(self):
