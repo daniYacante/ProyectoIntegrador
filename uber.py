@@ -145,6 +145,8 @@ class elmFijo():
     def __init__(self,nombre,direccion) -> None:
         self.nombre=nombre
         self.direccion=direccion
+    def getPos(self):
+        return self.direccion
 class elmMovil(elmFijo):
     def __init__(self, nombre, direccion,monto) -> None:
         super().__init__(nombre, direccion)
@@ -166,5 +168,6 @@ if __name__=="__main__":
         loadElm(args["load_fix_element"])
     if args["load_movil_element"]!=None:
         print(args["load_movil_element"])
+        loadElm(args["load_fix_element"])
     if args["create_trip"]!=None:
         print(args["create_trip"])
