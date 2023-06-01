@@ -168,6 +168,6 @@ if __name__=="__main__":
         loadElm(args["load_fix_element"])
     if args["load_movil_element"]!=None:
         print(args["load_movil_element"])
-        loadElm(args["load_fix_element"])
+        loadElm(args["load_movil_element"])
     if args["create_trip"]!=None:
         print(args["create_trip"])
