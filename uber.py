@@ -71,7 +71,7 @@ def loadElm(element:str):
     if mat.group(4)!=None:
         # Verificar si el monto es un valor numérico
         try:
-            monto = float(mat.group[4])
+            monto = float(mat.group(4))
         except ValueError:
             print('Error: El monto debe ser un valor numérico.')
             return
@@ -88,6 +88,12 @@ def loadElm(element:str):
         myMap.load(fijo)
         print(f'Se ha cargado el elemento fijo: {fijo.nombre} - {fijo.direccion}')
     return serializar(myMap,"grafMap")
+
+
+import heapq
+from typing import List
+
+
 
 class mapa():
     def __init__(self,E:list,V:list) -> None:
@@ -153,6 +159,67 @@ class elmMovil(elmFijo):
         self.monto=monto
 
 
+
+from typing import List
+import heapq
+
+
+def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: str, graph: mapa) -> List[elmMovil]:
+    if person_name not in graph.fijos:
+        print(f'Error: La persona "{person_name}" no existe.')
+        return []
+
+    # Extraemos el punto de inicio
+    match = re.search("<(e\d+)", person_direction)
+    if not match:
+        print(f'Error: direccion de persona invalida: {person_direction}')
+        return []
+
+    starting_point = match.group(1)
+
+    # Chequamos si el punto de inicio existe
+    if starting_point not in graph.esquinas:
+        print(f'Error: El punto de inicio "{starting_point}" no existe.')
+        return []
+
+    # Distancia de cada auto al punto de inicio
+    distances = {}
+    for car in cars:
+        distance = 0
+        for direction in car.direccion:
+            match = re.search("<(e\d+)", direction)
+            if not match:
+                print(f'Error: direccion de auto invalida: {direction}')
+                continue
+
+            destination = match.group(1)
+            if destination not in graph.esquinas:
+                print(f'Error: el destino "{destination}" no existe.')
+                continue
+
+            # Dijkstra's para encontrar la menor distancia entre los autos y el punto de inicio
+            queue = [(0, starting_point)]
+            visited = set()
+
+            while queue:
+                current_distance, current_node = queue.pop(0)
+                visited.add(current_node)
+
+                if current_node == destination:
+                    distance += current_distance
+                    break
+
+                for neighbor, edge in graph.esquinas[current_node].vecinas.items():
+                    if neighbor not in visited:
+                        queue.append((current_distance + int(edge.distancia)//2, neighbor))
+
+            distances[car.nombre] = distance
+
+    # Los primeros tres tienen la menor distancia.
+    nearest_cars = sorted(cars, key=lambda car: distances.get(car.nombre, float('inf')))[:3]
+
+    return [(car, distances[car.nombre]) for car in nearest_cars]
+
 if __name__=="__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-create_map",help="Path al archivo mapa")
@@ -170,4 +237,16 @@ if __name__=="__main__":
         print(args["load_movil_element"])
         loadElm(args["load_movil_element"])
     if args["create_trip"]!=None:
-        print(args["create_trip"])
+        name = args["create_trip"]
+        myMap=deserializar("grafMap")
+        fijos = myMap.getFijos()
+        for fix in fijos.values():
+            print(fix.nombre,fix.direccion)
+            if fix.nombre == name:
+                direccion = fix.direccion
+                start = fix.direccion[0]
+        print("Persona elegida:", args["create_trip"], "Ubicacion:", direccion)
+        nearest_cars = find_nearest_cars(args["create_trip"], myMap.moviles.values(), start, myMap)
+        print("Tres autos mas cercanos:")
+        for car, distance in nearest_cars:
+            print(f"{car.nombre} {car.direccion} (Distancia: {distance})")
