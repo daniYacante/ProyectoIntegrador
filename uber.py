@@ -99,9 +99,27 @@ class mapa():
             self.esquinas[vert]=newVert
         for calle in V:
             ex,ey,w=re.findall("e*\d+",calle)
+            w=int(w)
             if self.esquinas[ex].name==ex:
                 vec=vecina(name=ey,dist=w)
                 self.esquinas[ex].vecinas[ey]=vec
+                # if ex=="e5" and ey=="e6":
+                self.esquinas[ey].desde.append(ex)
+                if ey in self.esquinas[ex].shortestPath.keys():
+                    if w<self.esquinas[ex].shortestPath[ey]:
+                        self.esquinas[ex].shortestPath[ey]=w
+                else:
+                    self.esquinas[ex].shortestPath[ey]=w
+                tablaEy=self.esquinas[ey].shortestPath
+                for nodo in tablaEy.keys():
+                    if nodo!=ex:
+                        if nodo in self.esquinas[ex].shortestPath.keys():
+                            if self.esquinas[ex].shortestPath[nodo]>tablaEy[nodo]+w:
+                                self.esquinas[ex].shortestPath[nodo]=tablaEy[nodo]+w
+                        else:
+                            self.esquinas[ex].shortestPath[nodo]=tablaEy[nodo]+w
+                for nodosAvisar in self.esquinas[ex].desde:
+                    self.esquinas[nodosAvisar].updateDist(self.esquinas[ex].shortestPath,self.esquinas,ex)
     def load(self,elemento):
         if type(elemento)==elmFijo:
             self.fijos[elemento.nombre]=elemento
@@ -136,6 +154,23 @@ class esquina():
     def __init__(self,name:str) -> None:
         self.name=name
         self.vecinas:Dict[vecina]={}
+        self.desde=[]
+        self.shortestPath={}
+    def updateDist(self,tabla:dict,esquinas:dict,hijo):
+        d=self.vecinas[hijo].distancia
+        NHC=True
+        for nodo in tabla.keys():
+            if nodo!=self.name:
+                if nodo in self.shortestPath.keys():
+                    if self.shortestPath[nodo]>tabla[nodo]+d:
+                        self.shortestPath[nodo]=tabla[nodo]+d
+                        NHC=False
+                else:
+                    self.shortestPath[nodo]=tabla[nodo]+d
+                    NHC=False
+        if not NHC:
+            for nodosAvisar in self.desde:
+                esquinas[nodosAvisar].updateDist(self.shortestPath,esquinas,self.name)
 class vecina():
     def  __init__(self,name:str,dist:int) -> None:
         self.name=name

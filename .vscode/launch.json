@@ -11,8 +11,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            //"args": ["-create_map","mapa.txt"],
-            "args": ["-load_fix_element","<H1,{<e3,3>,<e15,3>}>"],
+            "args": ["-create_map","mapa.txt"],
+            // "args": ["-load_fix_element","<H1,{<e3,3>,<e15,3>}>"],
         }
     ]
 }
