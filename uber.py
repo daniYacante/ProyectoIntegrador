@@ -164,8 +164,8 @@ from typing import List
 import heapq
 
 
-def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: str, graph: mapa) -> List[elmMovil]:
-    if person_name not in graph.fijos:
+def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: str, monto, graph: mapa) -> List[elmMovil]:
+    if person_name not in graph.moviles:
         print(f'Error: La persona "{person_name}" no existe.')
         return []
 
@@ -185,35 +185,39 @@ def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: 
     # Distancia de cada auto al punto de inicio
     distances = {}
     for car in cars:
-        distance = 0
-        for direction in car.direccion:
-            match = re.search("<(e\d+)", direction)
-            if not match:
-                print(f'Error: direccion de auto invalida: {direction}')
-                continue
+        if car.nombre.startswith("C"):
+            if car.monto >= monto:
+                distance = 0
+                for direction in car.direccion:
+                    match = re.search("<(e\d+)", direction)
+                    if not match:
+                        print(f'Error: direccion de auto invalida: {direction}')
+                        continue
 
-            destination = match.group(1)
-            if destination not in graph.esquinas:
-                print(f'Error: el destino "{destination}" no existe.')
-                continue
+                    destination = match.group(1)
+                    if destination not in graph.esquinas:
+                        print(f'Error: el destino "{destination}" no existe.')
+                        continue
 
-            # Dijkstra's para encontrar la menor distancia entre los autos y el punto de inicio
-            queue = [(0, starting_point)]
-            visited = set()
+                # Dijkstra's para encontrar la menor distancia entre los autos y el punto de inicio
+                    queue = [(0, starting_point)]
+                    visited = set()
 
-            while queue:
-                current_distance, current_node = queue.pop(0)
-                visited.add(current_node)
+                    while queue:
+                        current_distance, current_node = queue.pop(0)
+                        visited.add(current_node)
 
-                if current_node == destination:
-                    distance += current_distance
-                    break
+                        if current_node == destination:
+                            distance += current_distance
+                            break
 
-                for neighbor, edge in graph.esquinas[current_node].vecinas.items():
-                    if neighbor not in visited:
-                        queue.append((current_distance + int(edge.distancia)//2, neighbor))
+                        for neighbor, edge in graph.esquinas[current_node].vecinas.items():
+                            if neighbor not in visited:
+                                queue.append((current_distance + int(edge.distancia)//2, neighbor))
 
-            distances[car.nombre] = distance
+                distances[car.nombre] = distance
+            else:
+                distances[car.nombre] = float('inf')
 
     # Los primeros tres tienen la menor distancia.
     nearest_cars = sorted(cars, key=lambda car: distances.get(car.nombre, float('inf')))[:3]
@@ -239,14 +243,30 @@ if __name__=="__main__":
     if args["create_trip"]!=None:
         name = args["create_trip"]
         myMap=deserializar("grafMap")
-        fijos = myMap.getFijos()
-        for fix in fijos.values():
-            print(fix.nombre,fix.direccion)
-            if fix.nombre == name:
-                direccion = fix.direccion
-                start = fix.direccion[0]
-        print("Persona elegida:", args["create_trip"], "Ubicacion:", direccion)
-        nearest_cars = find_nearest_cars(args["create_trip"], myMap.moviles.values(), start, myMap)
+        moviles = myMap.getMoviles()
+        for movil in moviles.values():
+            print(movil.nombre,movil.direccion,movil.monto)
+            if movil.nombre == name:
+                direccion = movil.direccion
+                start = movil.direccion[0]
+                monto = movil.monto
+        nearest_cars = find_nearest_cars(args["create_trip"], myMap.moviles.values(), start, monto, myMap)
         print("Tres autos mas cercanos:")
         for car, distance in nearest_cars:
             print(f"{car.nombre} {car.direccion} (Distancia: {distance})")
+
+
+#elmMovil
+# nombre, direccion, monto 
+#C1 ['<e3,3>', '<e15,3>'] 30.0
+#C2 ['<e4,3>', '<e16,3>'] 30.0
+#C3 ['<e8,3>', '<e20,3>'] 30.0
+#C4 ['<e31,3>', '<e32,2>'] 30.0
+#C5 ['<e27,2>', '<e28,2>'] 30.0
+#C6 ['<e3,3>', '<e4,1>'] 30.0
+#C7 ['<e28,2>', '<e41,1>'] 30.0
+#P4 ['<e58,1>', '<e59,1>'] 50.0
+#P5 ['<e28,1>', '<e29,1>'] 20.0
+#P6 ['<e1,1>', '<e2,1>'] 30.0
+
+# comando para probar: python3 uber.py -create_trip "P4" o "P5" (en P4 da los tres autos con distancia inf porque no cumplen con el monto)
