@@ -71,7 +71,7 @@ def loadElm(element:str):
     if mat.group(4)!=None:
         # Verificar si el monto es un valor numérico
         try:
-            monto = float(mat.group[4])
+            monto = float(mat.group(4))
         except ValueError:
             print('Error: El monto debe ser un valor numérico.')
             return
@@ -88,7 +88,11 @@ def loadElm(element:str):
         myMap.load(fijo)
         print(f'Se ha cargado el elemento fijo: {fijo.nombre} - {fijo.direccion}')
     return serializar(myMap,"grafMap")
+def createTrip(entrada:str):
+    argu=re.search("([A-Z]\d+)\s+(.+)",entrada)
+    print(argu.group(1),"--",argu.group(2))
 
+    return
 class mapa():
     def __init__(self,E:list,V:list) -> None:
         self.esquinas:Dict[esquina] = {}
@@ -206,3 +210,4 @@ if __name__=="__main__":
         loadElm(args["load_movil_element"])
     if args["create_trip"]!=None:
         print(args["create_trip"])
+        createTrip(args["create_trip"])
