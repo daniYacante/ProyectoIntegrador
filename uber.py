@@ -108,6 +108,7 @@ class mapa():
             if self.esquinas[ex].name==ex:
                 vec=vecina(name=ey,dist=w)
                 self.esquinas[ex].vecinas[ey]=vec
+                self.esquinas[ey].desde.append(ex)
     def load(self,elemento):
         if type(elemento)==elmFijo:
             self.fijos[elemento.nombre]=elemento
@@ -142,6 +143,7 @@ class esquina():
     def __init__(self,name:str) -> None:
         self.name=name
         self.vecinas:Dict[vecina]={}
+        self.desde=[]
 class vecina():
     def  __init__(self,name:str,dist:int) -> None:
         self.name=name
@@ -170,13 +172,14 @@ def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: 
         return []
 
     # Extraemos el punto de inicio
-    match = re.search("<(e\d+)", person_direction)
+    match = re.search("<(e\d+),(\d+)", person_direction)
+
     if not match:
         print(f'Error: direccion de persona invalida: {person_direction}')
         return []
 
     starting_point = match.group(1)
-
+    di=float(match.group(2))
     # Chequamos si el punto de inicio existe
     if starting_point not in graph.esquinas:
         print(f'Error: El punto de inicio "{starting_point}" no existe.')
@@ -186,38 +189,40 @@ def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: 
     distances = {}
     for car in cars:
         if car.nombre.startswith("C"):
-            if car.monto >= monto:
-                distance = 0
-                for direction in car.direccion:
-                    match = re.search("<(e\d+)", direction)
-                    if not match:
-                        print(f'Error: direccion de auto invalida: {direction}')
-                        continue
+            # if car.monto >= monto:
+            distance = 0
+            for direction in car.direccion:
+                match = re.search("<(e\d+)", direction)
+                if not match:
+                    print(f'Error: direccion de auto invalida: {direction}')
+                    continue
 
-                    destination = match.group(1)
-                    if destination not in graph.esquinas:
-                        print(f'Error: el destino "{destination}" no existe.')
-                        continue
+                destination = match.group(1)
+                if destination not in graph.esquinas:
+                    print(f'Error: el destino "{destination}" no existe.')
+                    continue
 
-                # Dijkstra's para encontrar la menor distancia entre los autos y el punto de inicio
-                    queue = [(0, starting_point)]
-                    visited = set()
+            # Dijkstra's para encontrar la menor distancia entre los autos y el punto de inicio
+                import dijkstra
+                dijkstra.dijkstra(graph.moviles[person_name],graph.esquinas)
+                queue = [(di, starting_point)]
+                visited = set()
 
-                    while queue:
-                        current_distance, current_node = queue.pop(0)
-                        visited.add(current_node)
+                while queue:
+                    current_distance, current_node = queue.pop(0)
+                    visited.add(current_node)
 
-                        if current_node == destination:
-                            distance += current_distance
-                            break
+                    if current_node == destination:
+                        distance += current_distance
+                        break
 
-                        for neighbor, edge in graph.esquinas[current_node].vecinas.items():
-                            if neighbor not in visited:
-                                queue.append((current_distance + int(edge.distancia)//2, neighbor))
+                    for neighbor, edge in graph.esquinas[current_node].vecinas.items():
+                        if neighbor not in visited:
+                            queue.append((current_distance + int(edge.distancia)//2, neighbor))
 
-                distances[car.nombre] = distance
-            else:
-                distances[car.nombre] = float('inf')
+            distances[car.nombre] = distance
+            # else:
+            #     distances[car.nombre] = float('inf')
 
     # Los primeros tres tienen la menor distancia.
     nearest_cars = sorted(cars, key=lambda car: distances.get(car.nombre, float('inf')))[:3]
