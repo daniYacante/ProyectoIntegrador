@@ -91,8 +91,34 @@ def loadElm(element:str):
 def createTrip(entrada:str):
     argu=re.search("([A-Z]\d+)\s+(.+)",entrada)
     print(argu.group(1),"--",argu.group(2))
+    myMap=deserializar("grafMap")
+    persona=argu.group(1)
+    destino=argu.group(2)
+    dest=re.search("{(<.*>),(<.*>)}",destino)
+    if dest==None:
+        if destino not in myMap.getFijos():
+            if destino not in myMap.getMoviles():
+                print("El destino no existe")
+                return
+            else:
+                dest=myMap.getMoviles()[destino].getPos()
+        else:
+            dest=myMap.getFijos()[destino].getPos()
+        dest=re.search("{(<.*>),(<.*>)}",dest)
+    dx=dest.group(1)
+    dy=dest.group(2)
+    if not myMap.checkDir(dx,dy):
+        print("El destino no existe")
+        return 
+    if persona in myMap.getMoviles():
+        print("La persona esta")
+        sx,sy=myMap.getMoviles()[persona].getPos()
+        if sx[0] in myMap.esquinas.keys():
+            
 
-    return
+    else:
+        print("La persona no existe")
+        return
 class mapa():
     def __init__(self,E:list,V:list) -> None:
         self.esquinas:Dict[esquina] = {}
