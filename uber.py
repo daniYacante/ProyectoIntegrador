@@ -90,7 +90,6 @@ def loadElm(element:str):
     return serializar(myMap,"grafMap")
 
 
-import heapq
 from typing import List
 
 
@@ -160,74 +159,38 @@ class elmMovil(elmFijo):
         super().__init__(nombre, direccion)
         self.monto=monto
 
+import sys
+from typing import Dict, Tuple
+from queue import Queue
 
+def dijkstra(persona: str, esquinas: Dict[str, esquina]) -> Dict[str, Tuple[str, int]]:
+    distances = {}  # Almacena las distancias mínimas desde la persona a cada esquina
+    queue = Queue()  # Cola para el algoritmo de Dijkstra
+    queue.put(persona)  # Agregar la persona a la cola
 
-from typing import List
-import heapq
+    # Inicializar todas las distancias como infinito excepto la de la persona (0)
+    for esquina in esquinas.values():
+        if esquina.name == persona:
+            distances[esquina.name] = (esquina.name, 0)
+        else:
+            distances[esquina.name] = (None, sys.maxsize)
 
+    while not queue.empty():
+        current_esquina = queue.get()
 
-def find_nearest_cars(person_name: str, cars: List[elmMovil], person_direction: str, monto, graph: mapa) -> List[elmMovil]:
-    if person_name not in graph.moviles:
-        print(f'Error: La persona "{person_name}" no existe.')
-        return []
+        # Obtener las vecinas de la esquina actual y sus distancias
+        vecinas = esquinas[current_esquina].vecinas
 
-    # Extraemos el punto de inicio
-    match = re.search("<(e\d+),(\d+)", person_direction)
+        for vecina in vecinas.values():
+            new_distance = distances[current_esquina][1] + int(vecina.distancia)
 
-    if not match:
-        print(f'Error: direccion de persona invalida: {person_direction}')
-        return []
+            # Si se encuentra una distancia menor, actualizar el registro y encolar la vecina
+            if new_distance < distances[vecina.name][1]:
+                distances[vecina.name] = (current_esquina, new_distance)
+                queue.put(vecina.name)
 
-    starting_point = match.group(1)
-    di=float(match.group(2))
-    # Chequamos si el punto de inicio existe
-    if starting_point not in graph.esquinas:
-        print(f'Error: El punto de inicio "{starting_point}" no existe.')
-        return []
+    return distances
 
-    # Distancia de cada auto al punto de inicio
-    distances = {}
-    for car in cars:
-        if car.nombre.startswith("C"):
-            # if car.monto >= monto:
-            distance = 0
-            for direction in car.direccion:
-                match = re.search("<(e\d+)", direction)
-                if not match:
-                    print(f'Error: direccion de auto invalida: {direction}')
-                    continue
-
-                destination = match.group(1)
-                if destination not in graph.esquinas:
-                    print(f'Error: el destino "{destination}" no existe.')
-                    continue
-
-            # Dijkstra's para encontrar la menor distancia entre los autos y el punto de inicio
-                import dijkstra
-                dijkstra.dijkstra(graph.moviles[person_name],graph.esquinas)
-                queue = [(di, starting_point)]
-                visited = set()
-
-                while queue:
-                    current_distance, current_node = queue.pop(0)
-                    visited.add(current_node)
-
-                    if current_node == destination:
-                        distance += current_distance
-                        break
-
-                    for neighbor, edge in graph.esquinas[current_node].vecinas.items():
-                        if neighbor not in visited:
-                            queue.append((current_distance + int(edge.distancia)//2, neighbor))
-
-            distances[car.nombre] = distance
-            # else:
-            #     distances[car.nombre] = float('inf')
-
-    # Los primeros tres tienen la menor distancia.
-    nearest_cars = sorted(cars, key=lambda car: distances.get(car.nombre, float('inf')))[:3]
-
-    return [(car, distances[car.nombre]) for car in nearest_cars]
 
 if __name__=="__main__":
     ap = argparse.ArgumentParser()
@@ -250,28 +213,13 @@ if __name__=="__main__":
         myMap=deserializar("grafMap")
         moviles = myMap.getMoviles()
         for movil in moviles.values():
-            print(movil.nombre,movil.direccion,movil.monto)
             if movil.nombre == name:
-                direccion = movil.direccion
-                start = movil.direccion[0]
-                monto = movil.monto
-        nearest_cars = find_nearest_cars(args["create_trip"], myMap.moviles.values(), start, monto, myMap)
-        print("Tres autos mas cercanos:")
-        for car, distance in nearest_cars:
-            print(f"{car.nombre} {car.direccion} (Distancia: {distance})")
+                persona = movil
+        match = re.search(r"<(e\d+),\d+>", persona.direccion[0])
+        inicio = match.group(1)
+        distancias = dijkstra(inicio, myMap.esquinas)
 
-
-#elmMovil
-# nombre, direccion, monto 
-#C1 ['<e3,3>', '<e15,3>'] 30.0
-#C2 ['<e4,3>', '<e16,3>'] 30.0
-#C3 ['<e8,3>', '<e20,3>'] 30.0
-#C4 ['<e31,3>', '<e32,2>'] 30.0
-#C5 ['<e27,2>', '<e28,2>'] 30.0
-#C6 ['<e3,3>', '<e4,1>'] 30.0
-#C7 ['<e28,2>', '<e41,1>'] 30.0
-#P4 ['<e58,1>', '<e59,1>'] 50.0
-#P5 ['<e28,1>', '<e29,1>'] 20.0
-#P6 ['<e1,1>', '<e2,1>'] 30.0
-
-# comando para probar: python3 uber.py -create_trip "P4" o "P5" (en P4 da los tres autos con distancia inf porque no cumplen con el monto)
+        # Imprimir las distancias mínimas desde la persona a cada esquina
+        for esquina, (anterior, distancia) in distancias.items():
+            print(f"Distancia mínima desde {persona.nombre} a {esquina}: {distancia}")
+        
