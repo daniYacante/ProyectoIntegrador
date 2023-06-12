@@ -125,6 +125,7 @@ def createTrip(entrada:str):
     if persona in myMap.getMoviles():
         print("La persona esta")
         sx,sy=myMap.getMoviles()[persona].getPos()
+        saldo=myMap.getMoviles()[persona].monto
         # startEx=myMap.getGroups(sx)
         # startEy=myMap.getGroups(sy)
         # destinoEx=myMap.getGroups(dx)
@@ -146,8 +147,8 @@ def createTrip(entrada:str):
         caminos=[]
         for esquinaStart in listStart:
             for esquinaDest in listDest:
-                if myMap.getGroups(esquinaDest).group(1) in myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].shortestPath.keys():
-                    caminos.append((esquinaStart,esquinaDest,myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].shortestPath[myMap.getGroups(esquinaDest).group(1)]))
+                if myMap.getGroups(esquinaDest).group(1) in myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].shortestPath.keys() or myMap.getGroups(esquinaStart).group(1) == myMap.getGroups(esquinaDest).group(1):
+                    caminos.append((esquinaStart,esquinaDest,myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].checkPath(myMap.getGroups(esquinaDest).group(1))))
         if len(caminos)==0:
             print("No hay forma de llegar al destino")
             return
@@ -158,28 +159,58 @@ def createTrip(entrada:str):
             for elemento in myMap.getMoviles().keys():
                 if elemento[0].upper()=="C":
                     listCars.append(myMap.moviles[elemento])
+            autosSeleccionados=[]
             for car in listCars:
                 listDirCar=[]
                 dirCar=car.direccion
                 if myMap.checkDir(dirCar[0],dirCar[1]):
-                    listDirCar.append(dirCar[0])
-                if myMap.checkDir(dirCar[1],dirCar[0]):
                     listDirCar.append(dirCar[1])
+                if myMap.checkDir(dirCar[1],dirCar[0]):
+                    listDirCar.append(dirCar[0])
                 caminosAuto=[]
                 if SU:
                     listStart=[sx]
                 for esquinaAuto in listDirCar:
                     for esquinaStart in listStart:
-                        if myMap.getGroups(esquinaStart).group(1) in myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath.keys():
-                            caminosAuto.append((esquinaAuto,esquinaStart,myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath[myMap.getGroups(esquinaStart).group(1)]))
-                
+                        if myMap.getGroups(esquinaStart).group(1) in myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath.keys() or myMap.getGroups(esquinaStart).group(1) == myMap.getGroups(esquinaAuto).group(1):
+                            caminosAuto.append((esquinaAuto,esquinaStart,myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].checkPath(myMap.getGroups(esquinaStart).group(1))))
+
                 if len(caminosAuto)==0:
                     print("No hay autos que puedan llegar a la persona")
                     return
                 else:
                     caminoMinAuto=caminoMasCorto(myMap,caminosAuto)
-                    print(caminoMinAuto)
+                    # print(caminoMinAuto)
                     print(f"El camino mas corto a la persona desde el auto {car.nombre} {caminoMinAuto}")
+                precio=caminoMinAuto[2]+car.monto/4
+                if saldo>=precio:
+                    if len(autosSeleccionados)==0:
+                        autosSeleccionados.append((car.nombre,caminoMinAuto[2],precio))
+                    else:
+                        EI=False
+                        for i in range(len(autosSeleccionados)):
+                            if caminoMinAuto[2]<autosSeleccionados[i][1]:
+                                autosSeleccionados.insert(i,(car.nombre,caminoMinAuto[2],precio))
+                                EI=True
+                                break
+                        if not EI:
+                            autosSeleccionados.append((car.nombre,caminoMinAuto[2],precio))
+                        if len(autosSeleccionados)>3:
+                            autosSeleccionados.pop()
+            print("Autos disponibles para realizar el viaje:")
+            for i in range(len(autosSeleccionados)):
+                print(i+1," -",autosSeleccionados[i][0],"precio: ",autosSeleccionados[i][2])  
+            seleccion=input("Ingrese el numero de la opcion que va a elegir\nIngrese 'exit' para cancelar\n")
+            if seleccion=="exit":
+                return
+            else:
+                myMap.getMoviles()[persona].monto-=autosSeleccionados[int(seleccion)-1][2]
+                myMap.getMoviles()[persona].direccion=[dx,dy]
+                myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].direccion=[dx,dy]
+            print("Viaje realizado")
+            print("Direccion de la persona: ",myMap.getMoviles()[persona].getPos())
+            print("Direccion del auto: ",myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].getPos())
+            return serializar(myMap,"grafMap")
     else:
         print("La persona no existe")
         return
@@ -260,6 +291,11 @@ class esquina():
         self.vecinas:Dict[vecina]={}
         self.desde=[]
         self.shortestPath={}
+    def checkPath(self,nodo):
+        if nodo==self.name:
+            return 0
+        else:
+            return self.shortestPath[nodo]
     def updateDist(self,tabla:dict,esquinas:dict,hijo):
         d=self.vecinas[hijo].distancia
         NHC=True
