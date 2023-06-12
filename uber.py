@@ -89,12 +89,16 @@ def loadElm(element:str):
         print(f'Se ha cargado el elemento fijo: {fijo.nombre} - {fijo.direccion}')
     return serializar(myMap,"grafMap")
 def createTrip(entrada:str):
+    #De la cadena de entrada separa la persona del destino del viaje
+    #El viaje puede ser un lugar fijo o una direccion particular
     argu=re.search("([A-Z]\d+)\s+(.+)",entrada)
     print(argu.group(1),"--",argu.group(2))
     myMap=deserializar("grafMap")
     persona=argu.group(1)
     destino=argu.group(2)
     dest=re.search("{(<.*>),(<.*>)}",destino)
+    #Si el destino no es una direccion particular obtenemos la direccion del
+    #elemento fijo
     if dest==None:
         if destino not in myMap.getFijos():
             if destino not in myMap.getMoviles():
@@ -107,18 +111,88 @@ def createTrip(entrada:str):
         dest=re.search("{(<.*>),(<.*>)}",dest)
     dx=dest.group(1)
     dy=dest.group(2)
-    if not myMap.checkDir(dx,dy):
+    #Verificamos si a donde queremos llegar esta en una calle de 2 manos
+    listDest=[]
+    if myMap.checkDir(dx,dy):
+        listDest.append(dx)
+    if myMap.checkDir(dy,dx):
+        listDest.append(dy)
+    #Verificamos que la direccion exista en el mapa
+    if len(listDest)==0:
         print("El destino no existe")
         return 
+    #Verificamos que la persona exista dentro del mapa
     if persona in myMap.getMoviles():
         print("La persona esta")
         sx,sy=myMap.getMoviles()[persona].getPos()
-        if sx[0] in myMap.esquinas.keys():
-            
-
+        # startEx=myMap.getGroups(sx)
+        # startEy=myMap.getGroups(sy)
+        # destinoEx=myMap.getGroups(dx)
+        # destinoEy=myMap.getGroups(dy)
+        """
+        Si la calle es de una sola mano donde se encuentra la persona
+        Se queda una bandera en True para cuando haya que buscar el camino desde los autos
+        se tome la esquina opuesta, ya que el auto tendra que llegar a la persona por esa
+        esquina
+        """
+        listStart=[]
+        if myMap.checkDir(sx,sy):
+            listStart.append(sx)
+        if myMap.checkDir(sy,sx):
+            listStart.append(sy)
+        SU=False
+        if len(listStart)==1:
+            SU=True
+        caminos=[]
+        for esquinaStart in listStart:
+            for esquinaDest in listDest:
+                if myMap.getGroups(esquinaDest).group(1) in myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].shortestPath.keys():
+                    caminos.append((esquinaStart,esquinaDest,myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].shortestPath[myMap.getGroups(esquinaDest).group(1)]))
+        if len(caminos)==0:
+            print("No hay forma de llegar al destino")
+            return
+        else:
+            caminoMin=caminoMasCorto(myMap,caminos)
+            print(f"El camino mas corto de la persona al destino es {caminoMin}")
+            listCars=[]
+            for elemento in myMap.getMoviles().keys():
+                if elemento[0].upper()=="C":
+                    listCars.append(myMap.moviles[elemento])
+            for car in listCars:
+                listDirCar=[]
+                dirCar=car.direccion
+                if myMap.checkDir(dirCar[0],dirCar[1]):
+                    listDirCar.append(dirCar[0])
+                if myMap.checkDir(dirCar[1],dirCar[0]):
+                    listDirCar.append(dirCar[1])
+                caminosAuto=[]
+                if SU:
+                    listStart=[sx]
+                for esquinaAuto in listDirCar:
+                    for esquinaStart in listStart:
+                        if myMap.getGroups(esquinaStart).group(1) in myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath.keys():
+                            caminosAuto.append((esquinaAuto,esquinaStart,myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath[myMap.getGroups(esquinaStart).group(1)]))
+                
+                if len(caminosAuto)==0:
+                    print("No hay autos que puedan llegar a la persona")
+                    return
+                else:
+                    caminoMinAuto=caminoMasCorto(myMap,caminosAuto)
+                    print(caminoMinAuto)
+                    print(f"El camino mas corto a la persona desde el auto {car.nombre} {caminoMinAuto}")
     else:
         print("La persona no existe")
         return
+def caminoMasCorto(myMap,caminos):
+    # print(caminos)
+    distMin=-1
+    caminoMin=()
+    for camino in caminos:
+        distancia=float(myMap.getGroups(camino[0]).group(2))+float(myMap.getGroups(camino[1]).group(2))+float(camino[2])
+        if distancia<distMin or distMin==-1:
+            distMin=distancia
+            caminoMin=(camino[0],camino[1],distMin)
+    return caminoMin
 class mapa():
     def __init__(self,E:list,V:list) -> None:
         self.esquinas:Dict[esquina] = {}
