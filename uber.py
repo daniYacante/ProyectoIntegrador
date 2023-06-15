@@ -115,9 +115,11 @@ def createTrip(entrada:str):
                 dest=myMap.getMoviles()[destino].getPos()
         else:
             dest=myMap.getFijos()[destino].getPos()
-        dest=re.search("{(<.*>),(<.*>)}",dest)
-    dx=dest.group(1)
-    dy=dest.group(2)
+        dx=dest[0]
+        dy=dest[1]
+    else:
+        dx=dest.group(1)
+        dy=dest.group(2)
     #Verificamos si a donde queremos llegar esta en una calle de 2 manos
     listDest=[]
     if myMap.checkDir(dx,dy):
@@ -141,9 +143,9 @@ def createTrip(entrada:str):
         """
         listStart=[]
         if myMap.checkDir(sx,sy):
-            listStart.append(sx)
-        if myMap.checkDir(sy,sx):
             listStart.append(sy)
+        if myMap.checkDir(sy,sx):
+            listStart.append(sx)
         SU=False
         if len(listStart)==1:
             SU=True
@@ -236,8 +238,9 @@ def createTrip(entrada:str):
                 myMap.getMoviles()[persona].direccion=[dx,dy]
                 myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].direccion=[dx,dy]
             print("Viaje realizado")
-            print("Dirección de la persona: ",myMap.getMoviles()[persona].getPos())
-            print("Dirección del auto: ",myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].getPos())
+            print(f"Dirección de la persona: {persona}",myMap.getMoviles()[persona].getPos())
+            print(f"Saldo de la persona: {persona}",myMap.getMoviles()[persona].getMonto())
+            print(f"Dirección del auto: {myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].nombre}",myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].getPos())
             return serializar(myMap,"grafMap")
     else:
         print("La persona no existe")
@@ -247,10 +250,14 @@ def caminoMasCorto(myMap,caminos):
     distMin=-1
     caminoMin=()
     for camino in caminos:
-        distancia=float(myMap.getGroups(camino[0]).group(2))+float(myMap.getGroups(camino[1]).group(2))+float(camino[2])
+        distancia=float(myMap.getGroups(camino[0]).group(2))+float(myMap.getGroups(camino[1]).group(2))+float(camino[2][0])
         if distancia<distMin or distMin==-1:
             distMin=distancia
-            caminoMin=(camino[0],camino[1],distMin)
+            intermedios=[n for n in reversed(camino[2][1])]
+            if myMap.getGroups(camino[0]).group(1)!=myMap.getGroups(camino[1]).group(1):
+                intermedios.insert(0,myMap.getGroups(camino[0]).group(1))
+                intermedios.append(myMap.getGroups(camino[1]).group(1))
+            caminoMin=(camino[0],camino[1],distMin,intermedios)
     return caminoMin
 class mapa():
     def __init__(self,E:list,V:list) -> None:
@@ -269,18 +276,20 @@ class mapa():
                 # if ex=="e5" and ey=="e6":
                 self.esquinas[ey].desde.append(ex)
                 if ey in self.esquinas[ex].shortestPath.keys():
-                    if w<self.esquinas[ex].shortestPath[ey]:
-                        self.esquinas[ex].shortestPath[ey]=w
+                    if w<self.esquinas[ex].shortestPath[ey][0]:
+                        self.esquinas[ex].shortestPath[ey]=[w,[]]
                 else:
-                    self.esquinas[ex].shortestPath[ey]=w
+                    self.esquinas[ex].shortestPath[ey]=[w,[]]
                 tablaEy=self.esquinas[ey].shortestPath
                 for nodo in tablaEy.keys():
                     if nodo!=ex:
+                        lista=tablaEy[nodo][1].copy()
+                        newList=lista.append(ey)
                         if nodo in self.esquinas[ex].shortestPath.keys():
-                            if self.esquinas[ex].shortestPath[nodo]>tablaEy[nodo]+w:
-                                self.esquinas[ex].shortestPath[nodo]=tablaEy[nodo]+w
+                            if self.esquinas[ex].shortestPath[nodo][0]>tablaEy[nodo][0]+w:
+                                self.esquinas[ex].shortestPath[nodo]=[tablaEy[nodo][0]+w,lista]
                         else:
-                            self.esquinas[ex].shortestPath[nodo]=tablaEy[nodo]+w
+                            self.esquinas[ex].shortestPath[nodo]=[tablaEy[nodo][0]+w,lista]
                 for nodosAvisar in self.esquinas[ex].desde:
                     self.esquinas[nodosAvisar].updateDist(self.esquinas[ex].shortestPath,self.esquinas,ex)
     def load(self,elemento):
@@ -318,10 +327,11 @@ class esquina():
         self.name=name
         self.vecinas:Dict[vecina]={}
         self.desde=[]
+        #shortestPath:{esquina}=[w,[camino de esquinas]]
         self.shortestPath={}
     def checkPath(self,nodo):
         if nodo==self.name:
-            return 0
+            return [0,[self.name]]
         else:
             return self.shortestPath[nodo]
     def updateDist(self,tabla:dict,esquinas:dict,hijo):
@@ -329,12 +339,14 @@ class esquina():
         NHC=True
         for nodo in tabla.keys():
             if nodo!=self.name:
+                lista=tabla[nodo][1].copy()
+                newList=lista.append(hijo)
                 if nodo in self.shortestPath.keys():
-                    if self.shortestPath[nodo]>tabla[nodo]+d:
-                        self.shortestPath[nodo]=tabla[nodo]+d
+                    if self.shortestPath[nodo][0]>tabla[nodo][0]+d:
+                        self.shortestPath[nodo]=[tabla[nodo][0]+d,lista]
                         NHC=False
                 else:
-                    self.shortestPath[nodo]=tabla[nodo]+d
+                    self.shortestPath[nodo]=[tabla[nodo][0]+d,lista]
                     NHC=False
         if not NHC:
             for nodosAvisar in self.desde:
@@ -354,7 +366,8 @@ class elmMovil(elmFijo):
     def __init__(self, nombre, direccion,monto) -> None:
         super().__init__(nombre, direccion)
         self.monto=monto
-
+    def getMonto(self):
+        return self.monto
 
 if __name__=="__main__":
     ap = argparse.ArgumentParser()

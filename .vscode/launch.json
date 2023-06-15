@@ -11,9 +11,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            //"args": ["-create_map","mapa.txt"],
+            // "args": ["-create_map","mapa.txt"],
             // "args": ["-load_fix_element","<H1,{<e3,3>,<e15,3>}>"],
-            "args": ["-create_trip","P5 {<e14,2>,<e2,4>}"]
+            // "args": ["-create_trip","P5 {<e14,2>,<e2,4>}"]
+            "args": ["-create_trip","P4 E1"]
         }
     ]
 }
