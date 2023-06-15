@@ -44,7 +44,7 @@ o elemento fijo segun si existe el parametro de monto al final.
 """
 def loadElm(element:str):
     # Expresion regular que encuentra el objeto y las dos partes de la direccion
-    patt=re.compile("([A-Z]\d+),{(<.*>),(<.*>)},*(\d+)*")
+    patt=re.compile("([A-Z]\d+) *,*{*(<.*?>) *,*(<.*?>)}* *,*(\d+)*")
     mat=re.search(patt,element)
     elm=mat.group(1,2,3)
     myMap=deserializar("grafMap")
@@ -103,7 +103,7 @@ def createTrip(entrada:str):
     myMap=deserializar("grafMap")
     persona=argu.group(1)
     destino=argu.group(2)
-    dest=re.search("{(<.*>),(<.*>)}",destino)
+    dest=re.search("{*(<.*?>) *,*(<.*?>)}*",destino)
     #Si el destino no es una dirección particular obtenemos la dirección del
     #elemento fijo
     if dest==None:
@@ -195,8 +195,8 @@ def createTrip(entrada:str):
                         if myMap.getGroups(esquinaStart).group(1) in myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath.keys() or myMap.getGroups(esquinaStart).group(1) == myMap.getGroups(esquinaAuto).group(1):
                             caminosAuto.append((esquinaAuto,esquinaStart,myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].checkPath(myMap.getGroups(esquinaStart).group(1))))
                 if len(caminosAuto)==0:
-                    print("No hay autos que puedan llegar a la persona")
-                    return
+                    print(f"El auto {car.nombre} no puede llegar a la persona")
+                    continue
                 else:
                     caminoMinAuto=caminoMasCorto(myMap,caminosAuto)
                     # print(caminoMinAuto)
