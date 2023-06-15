@@ -2,6 +2,9 @@ import argparse
 from typing import Dict
 import re
 import pickle
+"""
+Pequeña función que serializa un objeto, devuelve True o False dependiendo si se pudo serializar o no
+"""
 def serializar(objeto,nombre):
     try:
         with open(nombre,'bw') as f:
@@ -11,6 +14,9 @@ def serializar(objeto,nombre):
         return False
     finally:
         return True
+"""
+Pequeña función que deserializa un objeto, devuelve el objeto o none dependiendo si se pudo deserializar o no
+"""
 def deserializar(nombre):
     try:
         with open(nombre,'br') as f:
@@ -20,7 +26,9 @@ def deserializar(nombre):
         return None
     finally:
         return obj
-
+"""
+Función que se llama para crear el mapa, se lee el archivo donde esta el mapa. Al finalizar se serializa el mapa
+"""
 def loadMap(dir:str):
     with open(dir,'r') as mp:
         E=mp.readline().split("=")[1][1:-2].split(",")
@@ -30,14 +38,15 @@ def loadMap(dir:str):
     #     print(myMap.esquinas[i].name)
     if serializar(myMap,"grafMap"):
         print("Map created successfully")
+"""
+Funcion que se llama al cargar un elemento, utilizando expresiones regulares se va a discernir entre un elemento movil
+o elemento fijo segun si existe el parametro de monto al final.
+"""
 def loadElm(element:str):
     # Expresion regular que encuentra el objeto y las dos partes de la direccion
     patt=re.compile("([A-Z]\d+),{(<.*>),(<.*>)},*(\d+)*")
     mat=re.search(patt,element)
     elm=mat.group(1,2,3)
-    # print(mat.group(1))
-    # print(mat.group(2))
-    # print(mat.group(3))
     myMap=deserializar("grafMap")
     if myMap==None:
         return
@@ -45,17 +54,10 @@ def loadElm(element:str):
     if not elm[0].isalnum():
         print('Error: El nombre del elemento solo puede contener caracteres alfanuméricos.')
         return
-    # elemento=element[0]
-    # direction=element[1]
-    # Analizar la dirección y extraer los datos
-    # pattern = r'<([a-zA-Z]+), (\d+)>'
-    # matches = re.findall(pattern, direction)
     if len(elm) != 3:
         print('Error: La dirección debe consistir en dos tuplas.')
         return
     # Crear las tuplas de dirección
-    # dir1 = (matches[0][0], int(matches[0][1]))
-    # dir2 = (matches[1][0], int(matches[1][1]))
     dir1=elm[1]
     dir2=elm[2]
     if not myMap.checkDir(dir1,dir2):
@@ -78,26 +80,31 @@ def loadElm(element:str):
         # Crear el elemento móvil y mostrar información
         movil = elmMovil(elm[0], [dir1, dir2], monto)
         # Actualizar el conjunto de nombres utilizados
-        # myMap.moviles[elm[0]]=movil
         myMap.load(movil)
         print(f'Se ha cargado el elemento móvil: {movil.nombre} - {movil.direccion} - Monto: {movil.monto}')
     else:
         fijo = elmFijo(elm[0], [dir1, dir2])
         # Actualizar el conjunto de nombres utilizados
-        # myMap.fijos[elm[0]]=fijo
         myMap.load(fijo)
         print(f'Se ha cargado el elemento fijo: {fijo.nombre} - {fijo.direccion}')
     return serializar(myMap,"grafMap")
+"""
+Función que comprobara todo lo necesario para realizar el viaje.
+Algunas de estas cosas son:
+    * Que la dirección a la que se desea llegar exista.
+    * Que la dirección a la que se desea llegar sea accesible desde el lugar de la persona.
+    * Que la persona exista.
+    * Que el auto pueda llegar a la persona.
+"""
 def createTrip(entrada:str):
     #De la cadena de entrada separa la persona del destino del viaje
-    #El viaje puede ser un lugar fijo o una direccion particular
+    #El viaje puede ser un lugar fijo o una dirección particular
     argu=re.search("([A-Z]\d+)\s+(.+)",entrada)
-    print(argu.group(1),"--",argu.group(2))
     myMap=deserializar("grafMap")
     persona=argu.group(1)
     destino=argu.group(2)
     dest=re.search("{(<.*>),(<.*>)}",destino)
-    #Si el destino no es una direccion particular obtenemos la direccion del
+    #Si el destino no es una dirección particular obtenemos la dirección del
     #elemento fijo
     if dest==None:
         if destino not in myMap.getFijos():
@@ -126,14 +133,10 @@ def createTrip(entrada:str):
         print("La persona esta")
         sx,sy=myMap.getMoviles()[persona].getPos()
         saldo=myMap.getMoviles()[persona].monto
-        # startEx=myMap.getGroups(sx)
-        # startEy=myMap.getGroups(sy)
-        # destinoEx=myMap.getGroups(dx)
-        # destinoEy=myMap.getGroups(dy)
         """
         Si la calle es de una sola mano donde se encuentra la persona
         Se queda una bandera en True para cuando haya que buscar el camino desde los autos
-        se tome la esquina opuesta, ya que el auto tendra que llegar a la persona por esa
+        se tome la esquina opuesta, ya que el auto tendrá que llegar a la persona por esa
         esquina
         """
         listStart=[]
@@ -144,6 +147,10 @@ def createTrip(entrada:str):
         SU=False
         if len(listStart)==1:
             SU=True
+        """
+        Se genera una lista de combinaciones de esquinas de salida y llegada, para ver cual es la que tiene menor distancia.
+        Si no hay combinaciones es que no hay un camino entre la/s esquina/s de salida y la/s de llegada.
+        """
         caminos=[]
         for esquinaStart in listStart:
             for esquinaDest in listDest:
@@ -155,11 +162,18 @@ def createTrip(entrada:str):
         else:
             caminoMin=caminoMasCorto(myMap,caminos)
             print(f"El camino mas corto de la persona al destino es {caminoMin}")
+            """
+            Obtengo la lista de los autos.
+            """
             listCars=[]
             for elemento in myMap.getMoviles().keys():
                 if elemento[0].upper()=="C":
                     listCars.append(myMap.moviles[elemento])
             autosSeleccionados=[]
+            """
+            Para cada auto obtengo si se encuentra en una calle de doble mano o no, ya que como con la persona
+            Cambia el como buscar a la persona
+            """
             for car in listCars:
                 listDirCar=[]
                 dirCar=car.direccion
@@ -170,11 +184,14 @@ def createTrip(entrada:str):
                 caminosAuto=[]
                 if SU:
                     listStart=[sx]
+                """
+                Como hicimos para ver si se podia llegar a la direccion deseada, vemos si el auto puede llegar
+                a la persona.
+                """
                 for esquinaAuto in listDirCar:
                     for esquinaStart in listStart:
                         if myMap.getGroups(esquinaStart).group(1) in myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath.keys() or myMap.getGroups(esquinaStart).group(1) == myMap.getGroups(esquinaAuto).group(1):
                             caminosAuto.append((esquinaAuto,esquinaStart,myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].checkPath(myMap.getGroups(esquinaStart).group(1))))
-
                 if len(caminosAuto)==0:
                     print("No hay autos que puedan llegar a la persona")
                     return
@@ -182,6 +199,10 @@ def createTrip(entrada:str):
                     caminoMinAuto=caminoMasCorto(myMap,caminosAuto)
                     # print(caminoMinAuto)
                     print(f"El camino mas corto a la persona desde el auto {car.nombre} {caminoMinAuto}")
+                """
+                Para cada auto vamos a ver si tiene un costo menor a la de los autos anteriores.
+                Si lo tiene se saca el auto de mayor costo, para insertar el nuevo auto.
+                """
                 precio=caminoMinAuto[2]+car.monto/4
                 if saldo>=precio:
                     if len(autosSeleccionados)==0:
@@ -197,10 +218,17 @@ def createTrip(entrada:str):
                             autosSeleccionados.append((car.nombre,caminoMinAuto[2],precio))
                         if len(autosSeleccionados)>3:
                             autosSeleccionados.pop()
+            if len(autosSeleccionados)==0:
+                print("No hay autos disponibles para realizar el viaje")
+                return
             print("Autos disponibles para realizar el viaje:")
             for i in range(len(autosSeleccionados)):
                 print(i+1," -",autosSeleccionados[i][0],"precio: ",autosSeleccionados[i][2])  
-            seleccion=input("Ingrese el numero de la opcion que va a elegir\nIngrese 'exit' para cancelar\n")
+            """
+            Si se elige un auto para realizar el viaje se procede a actualizar las direcciones tanto del auto
+            como de la persona como asi descontar el costo del viaje a la persona.
+            """
+            seleccion=input("Ingrese el numero de la opción que va a elegir\nIngrese 'exit' para cancelar\n")
             if seleccion=="exit":
                 return
             else:
@@ -208,8 +236,8 @@ def createTrip(entrada:str):
                 myMap.getMoviles()[persona].direccion=[dx,dy]
                 myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].direccion=[dx,dy]
             print("Viaje realizado")
-            print("Direccion de la persona: ",myMap.getMoviles()[persona].getPos())
-            print("Direccion del auto: ",myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].getPos())
+            print("Dirección de la persona: ",myMap.getMoviles()[persona].getPos())
+            print("Dirección del auto: ",myMap.getMoviles()[autosSeleccionados[int(seleccion)-1][0]].getPos())
             return serializar(myMap,"grafMap")
     else:
         print("La persona no existe")
