@@ -154,6 +154,11 @@ def createTrip(entrada:str):
         Si no hay combinaciones es que no hay un camino entre la/s esquina/s de salida y la/s de llegada.
         """
         caminos=[]
+        if checkSameStreet(myMap.getGroups(sx).group(1),myMap.getGroups(sy).group(1),myMap.getGroups(dx).group(1),myMap.getGroups(dy).group(1)):
+            if SU:
+                if (float(myMap.getGroups(sx).group(2))<float(myMap.getGroups(dx).group(2))):
+                    distan=float(myMap.getGroups(dx).group(2))-2*float(myMap.getGroups(sx).group(2))-float(myMap.getGroups(dy).group(2))
+                    caminos.append((sx,dy,[distan,[]]))
         for esquinaStart in listStart:
             for esquinaDest in listDest:
                 if myMap.getGroups(esquinaDest).group(1) in myMap.esquinas[myMap.getGroups(esquinaStart).group(1)].shortestPath.keys() or myMap.getGroups(esquinaStart).group(1) == myMap.getGroups(esquinaDest).group(1):
@@ -190,6 +195,11 @@ def createTrip(entrada:str):
                 Como hicimos para ver si se podia llegar a la direccion deseada, vemos si el auto puede llegar
                 a la persona.
                 """
+                if checkSameStreet(myMap.getGroups(sx).group(1),myMap.getGroups(sy).group(1),myMap.getGroups(dirCar[0]).group(1),myMap.getGroups(dirCar[1]).group(1)):
+                    if SU:
+                        if (float(myMap.getGroups(dirCar[0]).group(2))<float(myMap.getGroups(sx).group(2))):
+                            distan=float(myMap.getGroups(sx).group(2))-2*float(myMap.getGroups(dirCar[0]).group(2))-float(myMap.getGroups(sy).group(2))
+                            caminosAuto.append((dirCar[0],sy,[distan,[]]))
                 for esquinaAuto in listDirCar:
                     for esquinaStart in listStart:
                         if myMap.getGroups(esquinaStart).group(1) in myMap.esquinas[myMap.getGroups(esquinaAuto).group(1)].shortestPath.keys() or myMap.getGroups(esquinaStart).group(1) == myMap.getGroups(esquinaAuto).group(1):
@@ -245,6 +255,8 @@ def createTrip(entrada:str):
     else:
         print("La persona no existe")
         return
+def checkSameStreet(x1,y1,x2,y2):
+    return x1==x2 and y1==y2
 def caminoMasCorto(myMap,caminos):
     # print(caminos)
     distMin=-1
